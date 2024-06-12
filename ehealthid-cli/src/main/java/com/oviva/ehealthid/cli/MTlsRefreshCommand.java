@@ -30,7 +30,7 @@ public class MTlsRefreshCommand implements Callable<Integer> {
   @CommandLine.Option(
       names = {"-i", "--iss", "--issuer-uri"},
       description = "the issuer uri of the 'Fachdienst' identiy provider",
-      required = false)
+      required = true)
   private URI issuerUri;
 
   @CommandLine.Option(
