@@ -35,7 +35,7 @@ public class KeyGeneratorCommand implements Callable<Integer> {
   @CommandLine.Option(
       names = {"-i", "--iss", "--issuer-uri"},
       description = "the issuer uri of the 'Fachdienst' identiy provider",
-      required = false)
+      required = true)
   private URI issuerUri;
 
   private static final Logger logger = LoggerFactory.getLogger(KeyGeneratorCommand.class);
