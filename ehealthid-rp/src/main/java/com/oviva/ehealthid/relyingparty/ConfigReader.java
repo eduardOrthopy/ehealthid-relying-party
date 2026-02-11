@@ -3,6 +3,7 @@ package com.oviva.ehealthid.relyingparty;
 import com.oviva.ehealthid.relyingparty.cfg.ConfigProvider;
 import com.oviva.ehealthid.relyingparty.cfg.RelyingPartyConfig;
 import com.oviva.ehealthid.relyingparty.fed.FederationConfig;
+import com.oviva.ehealthid.relyingparty.util.BaseUriHelper;
 import com.oviva.ehealthid.relyingparty.util.Strings;
 import java.net.URI;
 import java.time.Duration;
@@ -83,7 +84,7 @@ public class ConfigReader {
             .federationMaster(fedmaster)
             .ttl(entityStatementTtl)
             .scopes(getScopes())
-            .redirectUris(List.of(baseUri.resolve("/auth/callback").toString()))
+            .redirectUris(List.of(BaseUriHelper.buildUriString(baseUri, "auth", "callback")))
             .build();
 
     var supportedResponseTypes = List.of("code");

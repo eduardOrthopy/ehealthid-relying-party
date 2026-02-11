@@ -7,6 +7,7 @@ import com.oviva.ehealthid.relyingparty.fed.FederationConfig;
 import com.oviva.ehealthid.relyingparty.svc.LocalizedException.Message;
 import com.oviva.ehealthid.relyingparty.svc.OpenIdErrors.ErrorCode;
 import com.oviva.ehealthid.relyingparty.svc.SessionRepo.Session;
+import com.oviva.ehealthid.relyingparty.util.BaseUriHelper;
 import com.oviva.ehealthid.relyingparty.util.IdGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -76,7 +77,7 @@ public class AuthService {
 
     var codeChallenge = calculateS256CodeChallenge(verifier);
 
-    var relyingPartyCallback = baseUri.resolve("/auth/callback");
+    var relyingPartyCallback = BaseUriHelper.buildUri(baseUri, "auth", "callback");
 
     var step1 =
         authenticationFlow.start(

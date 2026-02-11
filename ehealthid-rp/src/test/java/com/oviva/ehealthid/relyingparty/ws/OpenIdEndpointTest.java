@@ -38,6 +38,27 @@ class OpenIdEndpointTest {
   }
 
   @Test
+  void openIdConfiguration_withBasePath() {
+    // given - base URI has a path segment
+    var baseUriWithPath = URI.create("https://idp.example.com/app_one");
+    var config = new RelyingPartyConfig(null, null);
+    var sut = new OpenIdEndpoint(baseUriWithPath, config, null);
+
+    // when
+    OpenIdConfiguration body;
+    try (var res = sut.openIdConfiguration()) {
+      body = res.readEntity(OpenIdConfiguration.class);
+    }
+
+    // then
+    assertEquals("https://idp.example.com/app_one", body.issuer());
+    assertEquals("https://idp.example.com/app_one/auth", body.authorizationEndpoint());
+    assertEquals("https://idp.example.com/app_one/jwks.json", body.jwksUri());
+    assertEquals("https://idp.example.com/app_one/auth/token", body.tokenEndpoint());
+    assertEquals(List.of("ES256"), body.idTokenSigningAlgValuesSupported());
+  }
+
+  @Test
   void jwks() throws ParseException {
 
     var key =

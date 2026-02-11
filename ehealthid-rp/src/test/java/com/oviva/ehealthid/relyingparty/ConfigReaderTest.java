@@ -61,4 +61,38 @@ class ConfigReaderTest {
     // when
     assertThrows(IllegalArgumentException.class, sut::read);
   }
+
+  @Test
+  void read_baseUriWithPath() {
+    // given - base URI has a path segment
+    var provider = mock(ConfigProvider.class);
+
+    var sut = new ConfigReader(provider);
+
+    var baseUri = "https://rp.example.com/app_one";
+    var idpDiscoveryUri = "https://sso.example.com/.well-known/openid-configuration";
+    var appName = "Awesome DiGA";
+
+    when(provider.get(ConfigReader.CONFIG_FEDERATION_ENTITY_STATEMENT_JWKS_PATH))
+        .thenReturn(Optional.of("./src/test/resources/fixtures/example_sig_jwks.json"));
+    when(provider.get(ConfigReader.CONFIG_BASE_URI)).thenReturn(Optional.of(baseUri));
+    when(provider.get(ConfigReader.CONFIG_APP_NAME)).thenReturn(Optional.of(appName));
+    when(provider.get(ConfigReader.CONFIG_IDP_DISCOVERY_URI))
+        .thenReturn(Optional.of(idpDiscoveryUri));
+
+    // when
+    var config = sut.read();
+
+    // then
+    assertEquals(baseUri, config.baseUri().toString());
+    assertEquals(appName, config.federation().appName());
+
+    // Verify the callback URI includes the path
+    assertEquals(
+        List.of("https://rp.example.com/app_one/auth/callback"),
+        config.federation().redirectUris());
+
+    assertEquals(baseUri, config.federation().iss().toString());
+    assertEquals(baseUri, config.federation().sub().toString());
+  }
 }

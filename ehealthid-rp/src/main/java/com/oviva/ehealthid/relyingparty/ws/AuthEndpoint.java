@@ -9,6 +9,7 @@ import com.oviva.ehealthid.relyingparty.svc.AuthService.AuthorizationRequest;
 import com.oviva.ehealthid.relyingparty.svc.AuthService.CallbackRequest;
 import com.oviva.ehealthid.relyingparty.svc.AuthService.SelectedIdpRequest;
 import com.oviva.ehealthid.relyingparty.svc.ValidationException;
+import com.oviva.ehealthid.relyingparty.util.BaseUriHelper;
 import com.oviva.ehealthid.relyingparty.ws.ui.Pages;
 import com.oviva.ehealthid.relyingparty.ws.ui.TemplateRenderer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,10 +38,12 @@ public class AuthEndpoint {
 
   private final AuthService authService;
   private final URI appUri;
+  private final URI baseUri;
 
-  public AuthEndpoint(AuthService authService, @Nullable URI appUri) {
+  public AuthEndpoint(AuthService authService, @Nullable URI appUri, URI baseUri) {
     this.authService = authService;
     this.appUri = appUri;
+    this.baseUri = baseUri;
   }
 
   // Authorization Request
@@ -85,13 +88,15 @@ public class AuthEndpoint {
   }
 
   private NewCookie createSessionCookie(String sessionId) {
+    // Use the base URI path for cookie path to ensure cookies work with path-based deployments
+    var cookiePath = BaseUriHelper.buildUri(baseUri, "auth").getPath();
     return new NewCookie.Builder("session_id")
         .value(sessionId)
         .secure(true)
         .httpOnly(true)
         .sameSite(SameSite.LAX)
         .maxAge(-1) // session scoped
-        .path("/auth")
+        .path(cookiePath)
         .build();
   }
 

@@ -269,6 +269,37 @@ class ClientAuthenticatorTest {
         () -> authenticator.authenticate(new Request(null, "some_type", null)));
   }
 
+  @Test
+  void authenticate_withBaseUriPath() throws JOSEException {
+    // given - base URI has a path segment
+    var baseUriWithPath = URI.create("https://rp.example.com/app_one");
+
+    var key = generateKey();
+    var jwkSource = new StaticJwkSource<>(key);
+
+    var claims =
+        new JWTClaimsSet.Builder()
+            .audience(baseUriWithPath.toString())
+            .subject(CLIENT_ID)
+            .issuer(CLIENT_ID)
+            .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+            .jwtID(UUID.randomUUID().toString())
+            .build();
+
+    var signed = signJwt(claims, key);
+
+    var authenticator = new ClientAuthenticator(jwkSource, baseUriWithPath);
+
+    // when
+    var client =
+        authenticator.authenticate(
+            new Request(
+                CLIENT_ID, ClientAuthenticator.CLIENT_ASSERTION_TYPE_PRIVATE_KEY_JWT, signed));
+
+    // then
+    assertEquals(CLIENT_ID, client.clientId());
+  }
+
   private String signJwt(JWTClaimsSet claims, ECKey key) throws JOSEException {
 
     var signer = new ECDSASigner(key);

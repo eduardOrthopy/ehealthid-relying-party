@@ -24,13 +24,14 @@ class AuthEndpointTest {
 
   private static final String REDIRECT_URI = "https://myapp.example.com";
   private static final URI APP_URI = URI.create("https://myapp.example.com/app");
+  private static final URI BASE_URI = URI.create("https://idp.example.com");
 
   @Test
   void auth_badRequest() {
 
     var authService = mock(AuthService.class);
     doThrow(ValidationException.class).when(authService).auth(any());
-    var sut = new AuthEndpoint(authService, null);
+    var sut = new AuthEndpoint(authService, null, BASE_URI);
 
     var scope = "openid";
     var state = UUID.randomUUID().toString();
@@ -51,7 +52,7 @@ class AuthEndpointTest {
     var sessionId = IdGenerator.generateID();
     var authService = mock(AuthService.class);
     when(authService.auth(any())).thenReturn(new AuthorizationResponse(List.of(), sessionId));
-    var sut = new AuthEndpoint(authService, null);
+    var sut = new AuthEndpoint(authService, null, BASE_URI);
 
     var scope = "openid";
     var state = UUID.randomUUID().toString();
@@ -83,7 +84,7 @@ class AuthEndpointTest {
     var sessionId = IdGenerator.generateID();
     var authService = mock(AuthService.class);
     when(authService.auth(any())).thenReturn(new AuthorizationResponse(List.of(), sessionId));
-    var sut = new AuthEndpoint(authService, APP_URI);
+    var sut = new AuthEndpoint(authService, APP_URI, BASE_URI);
 
     var scope = "openid";
     var state = UUID.randomUUID().toString();
@@ -113,7 +114,7 @@ class AuthEndpointTest {
     var callbackRedirect = URI.create("https://app.example.com/success");
     var authService = mock(AuthService.class);
     when(authService.callback(any())).thenReturn(callbackRedirect);
-    var sut = new AuthEndpoint(authService, null);
+    var sut = new AuthEndpoint(authService, null, BASE_URI);
 
     // when
     try (var res = sut.callback(null, null, "de-DE")) {
@@ -133,7 +134,7 @@ class AuthEndpointTest {
     var callbackRedirect = URI.create("https://app.example.com/success");
     var authService = mock(AuthService.class);
     when(authService.callback(any())).thenReturn(callbackRedirect);
-    var sut = new AuthEndpoint(authService, null);
+    var sut = new AuthEndpoint(authService, null, BASE_URI);
 
     var code = "myCode";
     var sessionId = IdGenerator.generateID();
@@ -161,7 +162,7 @@ class AuthEndpointTest {
 
     var authService = mock(AuthService.class);
     when(authService.selectedIdentityProvider(any())).thenReturn(idpRedirect);
-    var sut = new AuthEndpoint(authService, null);
+    var sut = new AuthEndpoint(authService, null, BASE_URI);
 
     // when
     try (var res = sut.postSelectIdp(sessionId, selectedIdpIssuer, "de-DE")) {
@@ -184,7 +185,7 @@ class AuthEndpointTest {
 
     var authService = mock(AuthService.class);
     when(authService.selectedIdentityProvider(any())).thenReturn(idpRedirect);
-    var sut = new AuthEndpoint(authService, null);
+    var sut = new AuthEndpoint(authService, null, BASE_URI);
 
     // when
     try (var res = sut.postSelectIdp(sessionId, selectedIdpIssuer, "de-DE")) {
