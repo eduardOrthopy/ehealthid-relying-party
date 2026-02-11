@@ -3,6 +3,7 @@ package com.oviva.ehealthid.relyingparty.ws;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.oviva.ehealthid.relyingparty.cfg.RelyingPartyConfig;
+import com.oviva.ehealthid.relyingparty.util.BaseUriHelper;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -17,7 +18,7 @@ import java.util.function.Supplier;
 @Path("/")
 public class OpenIdEndpoint {
 
-  private final URI baseUri;
+  private final BaseUriHelper baseUriHelper;
   private final RelyingPartyConfig relyingPartyConfig;
   private final Supplier<ECKey> openIdProviderSigningKey;
 
@@ -25,7 +26,7 @@ public class OpenIdEndpoint {
       URI baseUri,
       RelyingPartyConfig relyingPartyConfig,
       Supplier<ECKey> openIdProviderSigningKey) {
-    this.baseUri = baseUri;
+    this.baseUriHelper = new BaseUriHelper(baseUri);
 
     this.relyingPartyConfig = relyingPartyConfig;
     this.openIdProviderSigningKey = openIdProviderSigningKey;
@@ -38,10 +39,10 @@ public class OpenIdEndpoint {
 
     var body =
         new OpenIdConfiguration(
-            baseUri.toString(),
-            baseUri.resolve("/auth").toString(),
-            baseUri.resolve("/auth/token").toString(),
-            baseUri.resolve("/jwks.json").toString(),
+            baseUriHelper.toString(),
+            baseUriHelper.resolve("/auth").toString(),
+            baseUriHelper.resolve("/auth/token").toString(),
+            baseUriHelper.resolve("/jwks.json").toString(),
             List.of("openid"),
             relyingPartyConfig.supportedResponseTypes(),
             List.of("authorization_code"),
