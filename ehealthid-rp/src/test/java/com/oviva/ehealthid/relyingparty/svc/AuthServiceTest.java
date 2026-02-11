@@ -278,4 +278,47 @@ class AuthServiceTest {
         ValidationException.class,
         () -> sut.selectedIdentityProvider(new SelectedIdpRequest(sessionId, null)));
   }
+
+  @Test
+  void auth_success_withBasePath() {
+    // given - base URI has a path segment
+    var baseUriWithPath = URI.create("https://idp.example.com/app_one");
+    var config = new RelyingPartyConfig(List.of("code"), List.of(REDIRECT_URI));
+    var fedConfig = FederationConfig.create().scopes(List.of("openid")).build();
+
+    var idpRedirectUrl = URI.create("https://federated-idp.example.com");
+
+    var trustedIdpStep = mock(TrustedSectoralIdpStep.class);
+    when(trustedIdpStep.idpRedirectUri()).thenReturn(idpRedirectUrl);
+
+    var selectIdpStep = mock(SelectSectoralIdpStep.class);
+    when(selectIdpStep.fetchIdpOptions()).thenReturn(List.of());
+    when(selectIdpStep.redirectToSectoralIdp(any())).thenReturn(trustedIdpStep);
+
+    var authFlow = mock(AuthenticationFlow.class);
+    when(authFlow.start(any())).thenReturn(selectIdpStep);
+
+    var sessionRepo = mock(SessionRepo.class);
+    var sut = new AuthService(baseUriWithPath, config, fedConfig, sessionRepo, null, authFlow);
+
+    var scope = "openid";
+    var state = UUID.randomUUID().toString();
+    var nonce = UUID.randomUUID().toString();
+    var responseType = "code";
+    var clientId = "myapp";
+    var req = new AuthorizationRequest(scope, state, responseType, clientId, REDIRECT_URI, nonce);
+
+    // when
+    var res = sut.auth(req);
+
+    // then
+    assertNotNull(res.sessionId());
+
+    // verify the callback URI includes the path
+    var authFlowCaptor = ArgumentCaptor.forClass(AuthenticationFlow.Session.class);
+    verify(authFlow).start(authFlowCaptor.capture());
+    var authFlowSession = authFlowCaptor.getValue();
+    assertEquals(
+        "https://idp.example.com/app_one/auth/callback", authFlowSession.callbackUri().toString());
+  }
 }
