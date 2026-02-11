@@ -145,7 +145,7 @@ Use environment variables to configure the relying party server.
 | `EHEALTHID_RP_OPENID_RP_SIG_JWKS_PATH`*      | Path to a JWKS with signing keys of our relying party, i.e. for mTLS client certificates                                                                                   | `./openid_rp_sig_jwks.json`                                       | 
 | `EHEALTHID_RP_OPENID_RP_ENC_JWKS_PATH`*      | Path to a JWKS with the keys used for encryption between the federation and the relying party, i.e. to encrypt id_tokens                                                   | `./openid_rp_enc_jwks.json`                                       |
 | `EHEALTHID_RP_REDIRECT_URIS`*                | Valid redirection URIs for OpenID connect.                                                                                                                                 | `https://sso-mydiga.example.com/auth/callback`                    |
-| `EHEALTHID_RP_BASE_URI`*                     | The external base URI of the relying party. This is also the `issuer` towards the OpenID federation. Additional paths are unsupported for now.                             | `https://mydiga-rp.example.com`                                   |
+| `EHEALTHID_RP_BASE_URI`*                     | The external base URI of the relying party. This is also the `issuer` towards the OpenID federation. Supports both host-only URIs (e.g., `https://host`) and path-aware URIs (e.g., `https://host/app`). See Path-Aware Base URIs below. | `https://mydiga-rp.example.com`                                   |
 | `EHEALTHID_RP_IDP_DISCOVERY_URI`*            | The URI of the discovery document of your identity provider. Used to fetch public keys for client authentication.                                                          | `https://sso-mydiga.example.com/.well-known/openid-configuration` |
 | `EHEALTHID_RP_FEDERATION_MASTER`*            | The URI of the federation master.                                                                                                                                          | `https://app-test.federationmaster.de`                            |
 | `EHEALTHID_RP_APP_NAME`*                     | The application name within the federation.                                                                                                                                | `Awesome DiGA`                                                    |
@@ -159,6 +159,65 @@ Use environment variables to configure the relying party server.
 | `EHEALTHID_RP_CODE_STORE_MAX_ENTRIES`        | The maximum number of codes to store. Keeps memory bounded.                                                                                                                | `1000`                                                            |
 | `EHEALTHID_RP_LOG_LEVEL`                     | The log level.                                                                                                                                                             | `INFO`                                                            |
 | `EHEALTHID_RP_OPENID_PROVIDER_SIG_JWKS_PATH` | Path to a JWKS with signing keys for our openIdProvider, for example the id_token issued by the relying party will be signed with it. Will be generated if not configured. | `./openid_provider_sig_jwks.json`                                 |
+
+## Path-Aware Base URIs
+
+The relying party now supports path-aware base URIs, allowing deployment behind reverse proxies with path prefixes. This feature maintains backwards compatibility with host-only URIs.
+
+### Supported URI Formats
+
+1. **Host-only URIs** (traditional, backwards compatible):
+   ```shell
+   EHEALTHID_RP_BASE_URI=https://rp.example.com
+   ```
+   - OpenID Discovery: `https://rp.example.com/.well-known/openid-configuration`
+   - Authorization: `https://rp.example.com/auth`
+   - Token endpoint: `https://rp.example.com/auth/token`
+   - JWKS: `https://rp.example.com/jwks.json`
+
+2. **Path-aware URIs** (new):
+   ```shell
+   EHEALTHID_RP_BASE_URI=https://rp.example.com/app
+   ```
+   - OpenID Discovery: `https://rp.example.com/.well-known/openid-configuration`
+   - Authorization: `https://rp.example.com/auth`
+   - Token endpoint: `https://rp.example.com/auth/token`
+   - JWKS: `https://rp.example.com/jwks.json`
+   - Session cookies: path set to `/app/auth`
+
+### Important Considerations
+
+- **Federation Registration**: The `base_uri` including any path must match what was registered with the federation master
+- **Reverse Proxy Alignment**: Ensure your reverse proxy configuration correctly routes requests to the relying party:
+  - Forward path segments as-is
+  - Do not strip or modify the path prefix
+  - Ensure cookies with path prefixes are properly transmitted
+- **Cookie Scope**: Session cookies will be scoped to the base path plus `/auth` (e.g., `/app/auth` for `https://host/app`)
+- **Redirect URIs**: Must be configured to match the callback endpoint path
+- **Backwards Compatibility**: Existing deployments with host-only URIs continue to work without changes
+
+### Reverse Proxy Example (nginx)
+
+```nginx
+location /app/ {
+    proxy_pass http://relying-party:1234/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cookie_path / /app/;
+}
+```
+
+### Validation
+
+After deployment, verify the configuration:
+
+1. Check OpenID Discovery document returns correct endpoint URLs
+2. Verify federation entity statement is accessible and valid
+3. Test authentication flow end-to-end
+4. Confirm session cookies have the expected path scope
+5. Validate that callback redirects work correctly
 
 # Generate Keys & Register for Federation
 
