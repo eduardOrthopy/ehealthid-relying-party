@@ -55,4 +55,26 @@ class OpenIdEndpointTest {
       assertEquals(key, jwks.getKeys().get(0));
     }
   }
+
+  @Test
+  void openIdConfiguration_withPathAwareBaseUri() {
+
+    var pathBaseUri = URI.create("https://idp.example.com/app");
+    var config = new RelyingPartyConfig(null, null);
+    var sut = new OpenIdEndpoint(pathBaseUri, config, null);
+
+    // when
+    OpenIdConfiguration body;
+    try (var res = sut.openIdConfiguration()) {
+      body = res.readEntity(OpenIdConfiguration.class);
+    }
+
+    // then - issuer should preserve the path
+    assertEquals("https://idp.example.com/app", body.issuer());
+
+    // Endpoints should resolve from root (standard URI behavior)
+    assertEquals("https://idp.example.com/auth", body.authorizationEndpoint());
+    assertEquals("https://idp.example.com/jwks.json", body.jwksUri());
+    assertEquals("https://idp.example.com/auth/token", body.tokenEndpoint());
+  }
 }

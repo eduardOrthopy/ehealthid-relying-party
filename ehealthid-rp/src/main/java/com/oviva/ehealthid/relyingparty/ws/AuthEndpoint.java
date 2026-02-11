@@ -9,6 +9,7 @@ import com.oviva.ehealthid.relyingparty.svc.AuthService.AuthorizationRequest;
 import com.oviva.ehealthid.relyingparty.svc.AuthService.CallbackRequest;
 import com.oviva.ehealthid.relyingparty.svc.AuthService.SelectedIdpRequest;
 import com.oviva.ehealthid.relyingparty.svc.ValidationException;
+import com.oviva.ehealthid.relyingparty.util.BaseUriHelper;
 import com.oviva.ehealthid.relyingparty.ws.ui.Pages;
 import com.oviva.ehealthid.relyingparty.ws.ui.TemplateRenderer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,10 +38,12 @@ public class AuthEndpoint {
 
   private final AuthService authService;
   private final URI appUri;
+  private final BaseUriHelper baseUriHelper;
 
-  public AuthEndpoint(AuthService authService, @Nullable URI appUri) {
+  public AuthEndpoint(AuthService authService, @Nullable URI appUri, URI baseUri) {
     this.authService = authService;
     this.appUri = appUri;
+    this.baseUriHelper = new BaseUriHelper(baseUri);
   }
 
   // Authorization Request
@@ -91,7 +94,7 @@ public class AuthEndpoint {
         .httpOnly(true)
         .sameSite(SameSite.LAX)
         .maxAge(-1) // session scoped
-        .path("/auth")
+        .path(baseUriHelper.path("/auth"))
         .build();
   }
 
