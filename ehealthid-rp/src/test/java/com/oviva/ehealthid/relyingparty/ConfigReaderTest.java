@@ -61,4 +61,90 @@ class ConfigReaderTest {
     // when
     assertThrows(IllegalArgumentException.class, sut::read);
   }
+
+  @Test
+  void read_withPathAwareBaseUri_generatesCorrectRedirectUri() {
+    var provider = mock(ConfigProvider.class);
+
+    var sut = new ConfigReader(provider);
+
+    var baseUri = "https://rp.example.com/app";
+    var idpDiscoveryUri = "https://sso.example.com/.well-known/openid-configuration";
+    var appName = "Awesome DiGA";
+
+    when(provider.get(ConfigReader.CONFIG_FEDERATION_ENTITY_STATEMENT_JWKS_PATH))
+        .thenReturn(Optional.of("./src/test/resources/fixtures/example_sig_jwks.json"));
+    when(provider.get(ConfigReader.CONFIG_BASE_URI)).thenReturn(Optional.of(baseUri));
+    when(provider.get(ConfigReader.CONFIG_APP_NAME)).thenReturn(Optional.of(appName));
+    when(provider.get(ConfigReader.CONFIG_IDP_DISCOVERY_URI))
+        .thenReturn(Optional.of(idpDiscoveryUri));
+
+    // when
+    var config = sut.read();
+
+    // then
+    assertEquals("https://rp.example.com/app", config.baseUri().toString());
+    assertEquals("https://rp.example.com/app", config.federation().iss().toString());
+    assertEquals("https://rp.example.com/app", config.federation().sub().toString());
+
+    // Key test: redirect URI should resolve from root, not append to path
+    assertEquals(
+        List.of("https://rp.example.com/auth/callback"), config.federation().redirectUris());
+  }
+
+  @Test
+  void read_withMultiLevelPathBaseUri_generatesCorrectRedirectUri() {
+    var provider = mock(ConfigProvider.class);
+
+    var sut = new ConfigReader(provider);
+
+    var baseUri = "https://rp.example.com/api/v1/rp";
+    var idpDiscoveryUri = "https://sso.example.com/.well-known/openid-configuration";
+    var appName = "Awesome DiGA";
+
+    when(provider.get(ConfigReader.CONFIG_FEDERATION_ENTITY_STATEMENT_JWKS_PATH))
+        .thenReturn(Optional.of("./src/test/resources/fixtures/example_sig_jwks.json"));
+    when(provider.get(ConfigReader.CONFIG_BASE_URI)).thenReturn(Optional.of(baseUri));
+    when(provider.get(ConfigReader.CONFIG_APP_NAME)).thenReturn(Optional.of(appName));
+    when(provider.get(ConfigReader.CONFIG_IDP_DISCOVERY_URI))
+        .thenReturn(Optional.of(idpDiscoveryUri));
+
+    // when
+    var config = sut.read();
+
+    // then
+    assertEquals("https://rp.example.com/api/v1/rp", config.baseUri().toString());
+
+    // Redirect URI resolves from root (standard URI.resolve behavior)
+    assertEquals(
+        List.of("https://rp.example.com/auth/callback"), config.federation().redirectUris());
+  }
+
+  @Test
+  void read_backwardsCompatibility_hostOnlyBaseUri() {
+    var provider = mock(ConfigProvider.class);
+
+    var sut = new ConfigReader(provider);
+
+    var baseUri = "https://rp.example.com";
+    var idpDiscoveryUri = "https://sso.example.com/.well-known/openid-configuration";
+    var appName = "Awesome DiGA";
+
+    when(provider.get(ConfigReader.CONFIG_FEDERATION_ENTITY_STATEMENT_JWKS_PATH))
+        .thenReturn(Optional.of("./src/test/resources/fixtures/example_sig_jwks.json"));
+    when(provider.get(ConfigReader.CONFIG_BASE_URI)).thenReturn(Optional.of(baseUri));
+    when(provider.get(ConfigReader.CONFIG_APP_NAME)).thenReturn(Optional.of(appName));
+    when(provider.get(ConfigReader.CONFIG_IDP_DISCOVERY_URI))
+        .thenReturn(Optional.of(idpDiscoveryUri));
+
+    // when
+    var config = sut.read();
+
+    // then - behavior should be identical to before
+    assertEquals("https://rp.example.com", config.baseUri().toString());
+    assertEquals("https://rp.example.com", config.federation().iss().toString());
+    assertEquals("https://rp.example.com", config.federation().sub().toString());
+    assertEquals(
+        List.of("https://rp.example.com/auth/callback"), config.federation().redirectUris());
+  }
 }
