@@ -198,4 +198,35 @@ class AuthEndpointTest {
       assertEquals(sessionId, req.sessionId());
     }
   }
+
+  @Test
+  void auth_withPathAwareBaseUri_setCookieWithCorrectPath() {
+
+    var pathAwareBaseUri = URI.create("https://rp.example.com/app");
+    var sessionId = IdGenerator.generateID();
+    var authService = mock(AuthService.class);
+    when(authService.auth(any())).thenReturn(new AuthorizationResponse(List.of(), sessionId));
+    var sut = new AuthEndpoint(authService, null, pathAwareBaseUri);
+
+    var scope = "openid";
+    var state = UUID.randomUUID().toString();
+    var nonce = UUID.randomUUID().toString();
+    var responseType = "code";
+    var clientId = "myapp";
+    var language = "de-DE";
+
+    // when
+    try (var res = sut.auth(scope, state, responseType, clientId, REDIRECT_URI, nonce, language)) {
+
+      // then - verify cookie has correct path
+      var cookies = res.getCookies();
+      assertTrue(cookies.containsKey("session_id"));
+
+      var sessionCookie = cookies.get("session_id");
+      assertEquals("/app/auth", sessionCookie.getPath());
+      assertEquals(-1, sessionCookie.getMaxAge()); // session scoped
+      assertTrue(sessionCookie.isSecure());
+      assertTrue(sessionCookie.isHttpOnly());
+    }
+  }
 }
