@@ -96,6 +96,32 @@ export MEMBER_ID=FDmyDiGa0112TU
 # see also: https://wiki.gematik.de/pages/viewpage.action?pageId=544316583
 ```
 
+## Path-Based Deployments
+
+The Relying Party fully supports path-based deployments where the `EHEALTHID_RP_BASE_URI` includes
+a path segment. This is useful when deploying multiple applications behind a reverse proxy or when
+the application needs to be hosted at a subpath.
+
+**Example with path segment:**
+
+```shell
+export ISSUER_URI=https://mydiga.example.com/app_one
+
+# All endpoints will be available under /app_one:
+# - https://mydiga.example.com/app_one/.well-known/openid-configuration
+# - https://mydiga.example.com/app_one/.well-known/openid-federation
+# - https://mydiga.example.com/app_one/auth
+# - https://mydiga.example.com/app_one/auth/token
+# - https://mydiga.example.com/app_one/auth/callback
+# - https://mydiga.example.com/app_one/jwks.json
+```
+
+**Important considerations:**
+
+- The callback URIs, session cookies, and all federation metadata automatically respect the base path
+- Your reverse proxy or load balancer should route requests correctly to the application
+- The federation registration must use the full base URI including the path
+
 **IMPORTANT:**
 
 - The relying party __MUST__
@@ -145,7 +171,7 @@ Use environment variables to configure the relying party server.
 | `EHEALTHID_RP_OPENID_RP_SIG_JWKS_PATH`*      | Path to a JWKS with signing keys of our relying party, i.e. for mTLS client certificates                                                                                   | `./openid_rp_sig_jwks.json`                                       | 
 | `EHEALTHID_RP_OPENID_RP_ENC_JWKS_PATH`*      | Path to a JWKS with the keys used for encryption between the federation and the relying party, i.e. to encrypt id_tokens                                                   | `./openid_rp_enc_jwks.json`                                       |
 | `EHEALTHID_RP_REDIRECT_URIS`*                | Valid redirection URIs for OpenID connect.                                                                                                                                 | `https://sso-mydiga.example.com/auth/callback`                    |
-| `EHEALTHID_RP_BASE_URI`*                     | The external base URI of the relying party. This is also the `issuer` towards the OpenID federation. Additional paths are unsupported for now.                             | `https://mydiga-rp.example.com`                                   |
+| `EHEALTHID_RP_BASE_URI`*                     | The external base URI of the relying party. This is also the `issuer` towards the OpenID federation. **Path segments are fully supported** (e.g., `https://mydiga-rp.example.com/app_one` will expose endpoints under `/app_one`). | `https://mydiga-rp.example.com` or `https://mydiga-rp.example.com/app_one` |
 | `EHEALTHID_RP_IDP_DISCOVERY_URI`*            | The URI of the discovery document of your identity provider. Used to fetch public keys for client authentication.                                                          | `https://sso-mydiga.example.com/.well-known/openid-configuration` |
 | `EHEALTHID_RP_FEDERATION_MASTER`*            | The URI of the federation master.                                                                                                                                          | `https://app-test.federationmaster.de`                            |
 | `EHEALTHID_RP_APP_NAME`*                     | The application name within the federation.                                                                                                                                | `Awesome DiGA`                                                    |
